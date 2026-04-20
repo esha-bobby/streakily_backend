@@ -1,0 +1,35 @@
+ACTIVATING VENV:
+source venv/bin/activate
+
+RELOADING THE SERVER:
+python -m uvicorn main:app --reload
+
+
+WHAT IS LEFT:
+
+Phase 1: Missing Endpoints (The "Cleanup" Phase)
+
+User Management: Add GET /users/{id} (View Profile) and DELETE /users/{id} (Delete Account). 
++1
+
+Habit Management: Add GET /users/{userId}/habits (View all habits) and DELETE /habits/{id} (Delete a habit). 
++1
+
+Logging: Add PUT /habits/{habitId}/logs/{date} to allow editing an existing log. 
++1
+
+Phase 2: Business Logic & Rules
+
+Duplicate Log Prevention: Ensure the code rejects a second log for the same habit on the same day. 
++2
+
+Dashboard Polish: Add activeHabits, completedToday, and the consistencyScore calculation. 
++1
+
+Phase 3: Final Deliverables
+
+SQL Schema File: Export your database structure to a .sql file. 
+
+Postman Collection: Export all your tests (including negative cases like "Invalid Email"). 
+
+README: Write the setup guide and include screenshots.
