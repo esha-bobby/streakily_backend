@@ -2,6 +2,8 @@ from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 import models, schemas, crud
 from database import engine, get_db
+from datetime import date
+from sqlalchemy import func
 
 # Build the DB tables on startup [cite: 107]
 models.Base.metadata.create_all(bind=engine)
@@ -26,13 +28,48 @@ def get_streak(habit_id: int, db: Session = Depends(get_db)):
 # 4. Dashboard [cite: 147]
 @app.get("/users/{user_id}/dashboard")
 def get_dashboard(user_id: int, db: Session = Depends(get_db)):
-    # This logic combines habits and streaks for the summary view [cite: 87-103]
-    habits = db.query(models.Habit).filter(models.Habit.user_id == user_id).all()
+    habits = crud.get_user_habits(db, user_id=user_id)
+    total_habits = len(habits)
+    
+    if total_habits == 0:
+        return {"totalHabits": 0, "activeHabits": 0, "completedToday": 0, "consistencyScore": 0}
+
+    today = date.today()
+    completed_today_count = 0
     results = []
+
     for h in habits:
         streak = crud.get_streak_data(db, h.id)
+        # Check if logged today
+        logged_today = db.query(models.HabitLog).filter(
+            models.HabitLog.habit_id == h.id,
+            func.date(models.HabitLog.log_date) == today,
+            models.HabitLog.completed == True
+        ).first()
+
+        if logged_today:
+            completed_today_count += 1
+            
         results.append({"habitName": h.name, **streak})
-    return {"totalHabits": len(habits), "currentStreaks": results}
+
+    # Requirement 2.5: Consistency Score
+    score = int((completed_today_count / total_habits) * 100)
+
+    return {
+        "totalHabits": total_habits,
+        "activeHabits": total_habits,
+        "completedToday": completed_today_count,
+        "currentStreaks": results,
+        "consistencyScore": score
+    }
+
+# New: Edit an existing log (Requirement 2.3)
+@app.put("/habits/{habit_id}/logs/{log_date}")
+def update_log(habit_id: int, log_date: date, completed: bool, db: Session = Depends(get_db)):
+    db_log = crud.update_habit_log(db, habit_id=habit_id, log_date=log_date, completed=completed)
+    if not db_log:
+        raise HTTPException(status_code=404, detail="Log not found")
+    return db_log
 
 # 5. Log a Habit (Add this now!)
 @app.post("/habits/{habit_id}/logs", response_model=schemas.HabitLogResponse)
