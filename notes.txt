@@ -33,3 +33,43 @@ SQL Schema File: Export your database structure to a .sql file.
 Postman Collection: Export all your tests (including negative cases like "Invalid Email"). 
 
 README: Write the setup guide and include screenshots.
+
+📝 CREATE:
+POST /users                          → Create user
+POST /habits                         → Create habit
+POST /habits/{habit_id}/logs         → Log habit completion
+
+📖 READ:
+GET /users/{id}                      → Get user details
+GET /users/{userId}/habits           → Get all user's habits
+GET /users/{userId}/dashboard        → Get full dashboard with streaks
+GET /habits/{habit_id}               → Get habit details
+GET /habits/{habit_id}/streak        → Get current & longest streak
+
+✏️ UPDATE:
+PUT /habits/{habit_id}/logs/{log_date} → Change if habit was completed
+
+🗑️ DELETE:
+DELETE /users/{id}                   → Delete user (cascades)
+DELETE /habits/{id}                  → Delete habit (cascades)
+
+User submits data via API
+        ↓
+FastAPI validates with Schemas (Pydantic)
+        ↓
+Routes call CRUD functions (business logic)
+        ↓
+CRUD functions query/modify SQLAlchemy Models
+        ↓
+SQLAlchemy converts to SQL & talks to PostgreSQL
+        ↓
+Data returns back through same path
+
+
+
+Request comes to FastAPI endpoint in main.py
+FastAPI calls get_db() (because of Depends(get_db))
+get_db() creates a SessionLocal() session using your engine
+Session is passed to CRUD functions in crud.py
+CRUD functions use that session to query/modify the database
+FastAPI runs the endpoint, then calls db.close() automatically

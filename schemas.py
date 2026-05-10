@@ -5,7 +5,7 @@ from typing import Optional
 # --- User Data Formats ---
 class UserCreate(BaseModel):
     name: str
-    email: EmailStr # This will be used for validation [cite: 167]
+    email: EmailStr 
 
 class UserResponse(BaseModel):
     id: int

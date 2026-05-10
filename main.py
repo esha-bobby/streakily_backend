@@ -5,27 +5,25 @@ from database import engine, get_db
 from datetime import date
 from sqlalchemy import func
 
-# Build the DB tables on startup [cite: 107]
+
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Streakify MVP")
 
-# 1. Create User [cite: 133]
+
 @app.post("/users", response_model=schemas.UserResponse)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     return crud.create_user(db=db, user=user)
 
-# 2. Create Habit [cite: 137]
 @app.post("/habits", response_model=schemas.HabitResponse)
 def create_habit(habit: schemas.HabitCreate, db: Session = Depends(get_db)):
     return crud.create_habit(db=db, habit=habit)
 
-# 3. View Streak [cite: 145]
+
 @app.get("/habits/{habit_id}/streak")
 def get_streak(habit_id: int, db: Session = Depends(get_db)):
     return crud.get_streak_data(db=db, habit_id=habit_id)
 
-# 4. Dashboard [cite: 147]
 @app.get("/users/{user_id}/dashboard")
 def get_dashboard(user_id: int, db: Session = Depends(get_db)):
     habits = crud.get_user_habits(db, user_id=user_id)
@@ -40,7 +38,7 @@ def get_dashboard(user_id: int, db: Session = Depends(get_db)):
 
     for h in habits:
         streak = crud.get_streak_data(db, h.id)
-        # Check if logged today
+    
         logged_today = db.query(models.HabitLog).filter(
             models.HabitLog.habit_id == h.id,
             func.date(models.HabitLog.log_date) == today,
@@ -52,7 +50,6 @@ def get_dashboard(user_id: int, db: Session = Depends(get_db)):
             
         results.append({"habitName": h.name, **streak})
 
-    # Requirement 2.5: Consistency Score
     score = int((completed_today_count / total_habits) * 100)
 
     return {
@@ -63,7 +60,6 @@ def get_dashboard(user_id: int, db: Session = Depends(get_db)):
         "consistencyScore": score
     }
 
-# New: Edit an existing log (Requirement 2.3)
 @app.put("/habits/{habit_id}/logs/{log_date}")
 def update_log(habit_id: int, log_date: date, completed: bool, db: Session = Depends(get_db)):
     db_log = crud.update_habit_log(db, habit_id=habit_id, log_date=log_date, completed=completed)
@@ -71,7 +67,6 @@ def update_log(habit_id: int, log_date: date, completed: bool, db: Session = Dep
         raise HTTPException(status_code=404, detail="Log not found")
     return db_log
 
-# 5. Log a Habit (Add this now!)
 @app.post("/habits/{habit_id}/logs", response_model=schemas.HabitLogResponse)
 def log_habit(habit_id: int, log: schemas.HabitLogCreate, db: Session = Depends(get_db)):
     # This calls the logging logic we wrote in crud.py
@@ -96,10 +91,11 @@ def read_habits(userId: int, db: Session = Depends(get_db)):
 def delete_habit(id: int, db: Session = Depends(get_db)):
     return crud.delete_habit(db, habit_id=id)
 
-# View a single habit by its ID
+
 @app.get("/habits/{habit_id}", response_model=schemas.HabitResponse)
 def read_habit(habit_id: int, db: Session = Depends(get_db)):
     db_habit = crud.get_habit(db, habit_id=habit_id)
     if db_habit is None:
         raise HTTPException(status_code=404, detail="Habit not found")
     return db_habit
+
